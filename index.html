@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Barista AI Companion | バリスタ支援AI</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter & Noto Sans JP -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+JP:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', 'Noto Sans JP', sans-serif;
+            background-color: #fcfbfa; /* Warm paper-like background */
+        }
+        /* Custom scrollbar for coffee aesthetics */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f5f2eb;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #c5a880;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a78b5f;
+        }
+    </style>
+</head>
+<body class="text-stone-800 min-h-screen flex flex-col selection:bg-amber-200 selection:text-amber-900">
+
+    <!-- Header -->
+    <header class="bg-gradient-to-r from-amber-950 via-amber-900 to-stone-900 text-amber-50 shadow-xl border-b border-amber-800/30">
+        <div class="max-w-7xl mx-auto px-4 py-5 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="bg-amber-700/80 p-2.5 rounded-xl border border-amber-500/20 shadow-inner flex items-center justify-center">
+                    <!-- Coffee Cup SVG Icon -->
+                    <svg class="w-8 h-8 text-amber-100 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 14a6 6 0 0110.18-4.242M18 10h.01M6 14a6 6 0 1012 0v-1a6 6 0 00-12 0v1zm0 0h12M15 3h.01M12 3h.01M9 3h.01M16 10a3 3 0 01-6 0h6z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-xl sm:text-2xl font-black tracking-tight flex items-center gap-2">
+                        Barista AI <span class="bg-amber-600/30 text-amber-300 text-xs px-2.5 py-1 rounded-full border border-amber-500/20 font-medium">v1.0 (Simple Model)</span>
+                    </h1>
+                    <p class="text-xs text-amber-200/70 font-light mt-0.5">エスプレッソ抽出分析 & レシピサジェストエンジン</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <button id="clear-history-btn" class="text-xs text-amber-200/60 hover:text-red-300 hover:bg-red-500/10 px-3 py-1.5 rounded-lg border border-transparent hover:border-red-500/20 transition-all font-medium">
+                    データを初期化
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 py-8 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
+        
+        <!-- Left Side: Input Form (5 Cols) -->
+        <section class="lg:col-span-5 space-y-6">
+            
+            <!-- AI Coach Settings Card -->
+            <div class="bg-amber-50/50 rounded-2xl shadow-sm border border-amber-900/10 p-5 space-y-4">
+                <div class="flex justify-between items-center cursor-pointer" onclick="document.getElementById('ai-config-panel').classList.toggle('hidden')">
+                    <h2 class="text-sm font-bold text-amber-950 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-amber-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        </svg>
+                        AIコーチ設定 & キャラクター選択
+                    </h2>
+                    <span class="text-xs text-amber-800 font-semibold flex items-center gap-1 hover:underline">
+                        設定を開閉
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </span>
+                </div>
+
+                <div id="ai-config-panel" class="space-y-3.5 pt-2 border-t border-amber-900/5">
+                    <!-- AI Engine Select -->
+                    <div>
+                        <label for="ai-engine" class="block text-2xs font-bold text-amber-900 uppercase tracking-wider mb-1">AI解析エンジン</label>
+                        <select id="ai-engine" class="w-full px-3 py-1.5 bg-white border border-amber-900/10 rounded-lg text-xs font-medium focus:outline-none focus:ring-1 focus:ring-amber-700">
+                            <option value="local">ローカルAI（内蔵シミュレーター）</option>
+                            <option value="gemini">リアル世界チャンピオンAI（Gemini API）</option>
+                        </select>
+                    </div>
+
+                    <!-- API Key Input -->
+                    <div id="api-key-container" class="hidden">
+                        <label for="api-key" class="block text-2xs font-bold text-amber-900 uppercase tracking-wider mb-1">Gemini API キー</label>
+                        <input type="password" id="api-key" class="w-full px-3 py-1.5 bg-white border border-amber-900/10 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-amber-700" placeholder="AI-zaSy... (GeminiのAPIキーを入力)">
+                        <p class="text-[10px] text-amber-800/60 mt-1">※Gemini APIキーはGoogle AI Studio等から無料で取得でき、ブラウザ内(LocalStorage)に安全に保存されます。</p>
+                    </div>
+
+                    <!-- Coach Persona Selection -->
+                    <div>
+                        <label for="coach-style" class="block text-2xs font-bold text-amber-900 uppercase tracking-wider mb-1">コーチのキャラクター性格</label>
+                        <select id="coach-style" class="w-full px-3 py-1.5 bg-white border border-amber-900/10 rounded-lg text-xs font-medium focus:outline-none focus:ring-1 focus:ring-amber-700">
+                            <option value="gentle">世界チャンピオン・専属コーチ (情熱と優しさ)</option>
+                            <option value="scientific">データ科学バリスタ (精密・科学分析)</option>
+                            <option value="traditional">イタリア老舗店のマスター (伝統と感覚重視)</option>
+                        </select>
+                    </div>
+
+                    <!-- Lagom P64 Burr Type Selection -->
+                    <div>
+                        <label for="burr-type" class="block text-2xs font-bold text-amber-900 uppercase tracking-wider mb-1">Lagom P64 搭載刃 (Burrs)</label>
+                        <select id="burr-type" class="w-full px-3 py-1.5 bg-white border border-amber-900/10 rounded-lg text-xs font-medium focus:outline-none focus:ring-1 focus:ring-amber-700">
+                            <option value="mizen">Mizen 64mm Omni (標準: バランス・甘み重視)</option>
+                            <option value="ssp_mp">SSP Multipurpose (超高解像度・高速流速・クリーン度極限)</option>
+                            <option value="ssp_hu">SSP High Uniformity (高ボディ・高濃度・クラシック)</option>
+                            <option value="ssp_cast">SSP Cast Sweet / Red Speed (甘み・複雑な質感・滑らかさ)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-md border border-stone-100 p-6 sm:p-8 space-y-6">
+                <div>
+                    <h2 class="text-lg font-bold text-stone-900 flex items-center gap-2">
+                        <span class="w-2.5 h-5 bg-amber-700 rounded-full"></span>
+                        抽出結果をインプット
+                    </h2>
+                    <p class="text-xs text-stone-400 mt-1">エスプレッソマシーン・グラインダーの設定と、飲んだ味わいの評価を入力してください。</p>
+                </div>
+
+                <form id="brew-form" class="space-y-5">
+                    <!-- Bean Information -->
+                    <div class="space-y-2">
+                        <label class="block text-xs font-bold text-stone-600 uppercase tracking-wider mb-1">使用コーヒー豆</label>
+                        <div class="flex gap-2">
+                            <select id="bean-select" class="flex-grow px-3 py-2 bg-stone-50 border border-stone-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-700/20 text-stone-700 font-medium">
+                                <option value="">-- 登録済みの豆を選択 --</option>
+                            </select>
+                            <button type="button" id="delete-bean-btn" class="px-3 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl border border-red-200 transition-colors text-xs font-bold shrink-0 flex items-center justify-center" title="選択した豆をリストから削除">
+                                豆を削除
+                            </button>
+                        </div>
+                        <input type="text" id="bean-name" required
+                            class="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-amber-700/20 focus:border-amber-700 transition-all text-sm font-medium" 
+                            placeholder="または新しい豆の名前を入力">
+                    </div>
+
+                    <!-- Hardware Section: Linea Micra & Lagom P64 Settings -->
+                    <div class="space-y-4">
+                        <h3 class="text-xs font-black text-amber-900 uppercase tracking-widest flex items-center gap-1">
+                            <span class="w-1.5 h-3 bg-amber-800 rounded-full"></span>
+                            Linea Micra 抽出設定
+                        </h3>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label for="dose" class="block text-xs font-bold text-stone-600 uppercase tracking-wider mb-1.5">粉の量 (Dose)</label>
+                                <div class="relative">
+                                    <input type="number" id="dose" step="0.1" required min="1" max="40"
+                                        class="w-full pl-4 pr-8 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-amber-700/20 focus:border-amber-700 transition-all text-sm font-bold">
+                                    <span class="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-stone-400 font-medium">g</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label for="yield" class="block text-xs font-bold text-stone-600 uppercase tracking-wider mb-1.5">抽出量 (Yield)</label>
+                                <div class="relative">
+                                    <input type="number" id="yield" step="0.1" required min="5" max="150"
+                                        class="w-full pl-4 pr-8 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-amber-700/20 focus:border-amber-700 transition-all text-sm font-bold">
+                                    <span class="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-stone-400 font-medium">g</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label for="time" class="block text-xs font-bold text-stone-600 uppercase tracking-wider mb-1.5">抽出時間 (Time)</label>
+                                <div class="relative">
+                                    <input type="number" id="time" required min="1" max="180"
+                                        class="w-full pl-4 pr-11 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-amber-700/20 focus:border-amber-700 transition-all text-sm font-bold">
+                                    <span class="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-stone-400 font-medium">秒</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label for="temp" class="block text-xs font-bold text-stone-600 uppercase tracking-wider mb-1.5">湯温 (Temp)</label>
+                                <div class="relative">
+                                    <input type="number" id="temp" required min="80" max="100"
+                                        class="w-full pl-4 pr-11 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-amber-700/20 focus:border-amber-700 transition-all text-sm font-bold">
+                                    <span class="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-stone-400 font-medium">°C</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Linea Micra Pre-Infusion Config -->
+                        <div class="grid grid-cols-2 gap-4 bg-amber-50/30 p-3 rounded-xl border border-amber-900/5">
+                            <div>
+                                <label for="preinfusion-on" class="block text-2xs font-bold text-stone-500 uppercase tracking-wider mb-1">Pre-Inf: 水ON秒数</label>
+                                <div class="relative">
+                                    <input type="number" id="preinfusion-on" step="0.1" required min="0" max="30"
+                                        class="w-full pl-3 pr-8 py-1.5 bg-white border border-stone-200 rounded-lg focus:ring-1 focus:ring-amber-700 transition-all text-xs font-bold">
+                                    <span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-stone-400">秒</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label for="preinfusion-wait" class="block text-2xs font-bold text-stone-500 uppercase tracking-wider mb-1">Pre-Inf: 待機秒数</label>
+                                <div class="relative">
+                                    <input type="number" id="preinfusion-wait" step="0.1" required min="0" max="30"
+                                        class="w-full pl-3 pr-8 py-1.5 bg-white border border-stone-200 rounded-lg focus:ring-1 focus:ring-amber-700 transition-all text-xs font-bold">
+                                    <span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-stone-400">秒</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="space-y-4">
+                        <h3 class="text-xs font-black text-amber-900 uppercase tracking-widest flex items-center gap-1">
+                            <span class="w-1.5 h-3 bg-amber-800 rounded-full"></span>
+                            Lagom P64 グラインダー設定
+                        </h3>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label for="grind-size" class="block text-xs font-bold text-stone-600 uppercase tracking-wider mb-1.5">挽き目ダイアル (0-10)</label>
+                                <input type="number" id="grind-size" step="0.1" required min="0" max="10"
+                                    class="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-amber-700/20 focus:border-amber-700 transition-all text-sm font-bold"
+                                    placeholder="例: 2.1">
+                            </div>
+                            <div>
+                                <label for="grinder-speed" class="block text-xs font-bold text-stone-600 uppercase tracking-wider mb-1.5">回転数ダイアル (1-9)</label>
+                                <input type="number" id="grinder-speed" step="1" required min="1" max="9"
+                                    class="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-amber-700/20 focus:border-amber-700 transition-all text-sm font-bold"
+                                    placeholder="例: 5">
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="border-stone-100 my-6">
+
+                    <!-- Taste Evaluation Slider Section -->
+                    <div class="space-y-4">
+                        <h3 class="text-sm font-bold text-stone-700 uppercase tracking-wider flex items-center gap-1.5">
+                            <svg class="w-4 h-4 text-amber-700" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"></path>
+                            </svg>
+                            味わい評価 (1〜5)
+                        </h3>
+
+                        <!-- Acidity -->
+                        <div class="space-y-1">
+                            <div class="flex justify-between text-xs font-semibold">
+                                <span class="text-stone-600">酸味 (Acidity)</span>
+                                <span id="acidity-val" class="text-amber-800 font-bold bg-amber-50 px-2 py-0.5 rounded border border-amber-100 shadow-sm">3</span>
+                            </div>
+                            <input type="range" id="acidity" min="1" max="5" step="1" class="w-full h-1.5 bg-stone-100 rounded-lg appearance-none cursor-pointer accent-amber-700">
+                        </div>
+
+                        <!-- Bitterness -->
+                        <div class="space-y-1">
+                            <div class="flex justify-between text-xs font-semibold">
+                                <span class="text-stone-600">苦味 (Bitterness)</span>
+                                <span id="bitterness-val" class="text-amber-800 font-bold bg-amber-50 px-2 py-0.5 rounded border border-amber-100 shadow-sm">3</span>
+                            </div>
+                            <input type="range" id="bitterness" min="1" max="5" step="1" class="w-full h-1.5 bg-stone-100 rounded-lg appearance-none cursor-pointer accent-amber-700">
+                        </div>
+
+                        <!-- Body -->
+                        <div class="space-y-1">
+                            <div class="flex justify-between text-xs font-semibold">
+                                <span class="text-stone-600">コク・ボディ (Body)</span>
+                                <span id="body-val" class="text-amber-800 font-bold bg-amber-50 px-2 py-0.5 rounded border border-amber-100 shadow-sm">3</span>
+                            </div>
+                            <input type="range" id="body" min="1" max="5" step="1" class="w-full h-1.5 bg-stone-100 rounded-lg appearance-none cursor-pointer accent-amber-700">
+                        </div>
+
+                        <!-- Sweetness -->
+                        <div class="space-y-1">
+                            <div class="flex justify-between text-xs font-semibold">
+                                <span class="text-stone-600">甘み (Sweetness)</span>
+                                <span id="sweetness-val" class="text-amber-800 font-bold bg-amber-50 px-2 py-0.5 rounded border border-amber-100 shadow-sm">3</span>
+                            </div>
+                            <input type="range" id="sweetness" min="1" max="5" step="1" class="w-full h-1.5 bg-stone-100 rounded-lg appearance-none cursor-pointer accent-amber-700">
+                        </div>
+
+                        <!-- Crema -->
+                        <div class="space-y-1">
+                            <div class="flex justify-between text-xs font-semibold">
+                                <span class="text-stone-600">クレマ品質 (Crema)</span>
+                                <span id="crema-val" class="text-amber-800 font-bold bg-amber-50 px-2 py-0.5 rounded border border-amber-100 shadow-sm">3</span>
+                            </div>
+                            <input type="range" id="crema" min="1" max="5" step="1" class="w-full h-1.5 bg-stone-100 rounded-lg appearance-none cursor-pointer accent-amber-700">
+                        </div>
+
+                        <!-- Balance -->
+                        <div class="space-y-1">
+                            <div class="flex justify-between text-xs font-semibold">
+                                <span class="text-stone-600">総合バランス (Balance)</span>
+                                <span id="balance-val" class="text-amber-800 font-bold bg-amber-50 px-2 py-0.5 rounded border border-amber-100 shadow-sm">3</span>
+                            </div>
+                            <input type="range" id="balance" min="1" max="5" step="1" class="w-full h-1.5 bg-amber-100 rounded-lg appearance-none cursor-pointer accent-amber-700">
+                        </div>
+                    </div>
+
+                    <!-- Checkbox Tags / Sensory Notes -->
+                    <div class="space-y-2 mt-4">
+                        <label class="block text-xs font-bold text-stone-600 uppercase tracking-wider mb-1.5">ネガティブ・異常の検知</label>
+                        <div class="grid grid-cols-2 gap-2 text-xs">
+                            <label class="flex items-center gap-2 p-2 rounded-lg border border-stone-200 bg-stone-50 hover:bg-stone-100 cursor-pointer transition-colors">
+                                <input type="checkbox" name="notes" value="sour_sharp" class="accent-amber-700 w-4 h-4">
+                                <span class="text-stone-700">刺すような酸味</span>
+                            </label>
+                            <label class="flex items-center gap-2 p-2 rounded-lg border border-stone-200 bg-stone-50 hover:bg-stone-100 cursor-pointer transition-colors">
+                                <input type="checkbox" name="notes" value="bitter_burnt" class="accent-amber-700 w-4 h-4">
+                                <span class="text-stone-700">焦げた苦味</span>
+                            </label>
+                            <label class="flex items-center gap-2 p-2 rounded-lg border border-stone-200 bg-stone-50 hover:bg-stone-100 cursor-pointer transition-colors">
+                                <input type="checkbox" name="notes" value="astringent" class="accent-amber-700 w-4 h-4">
+                                <span class="text-stone-700">後味の渋み</span>
+                            </label>
+                            <label class="flex items-center gap-2 p-2 rounded-lg border border-stone-200 bg-stone-50 hover:bg-stone-100 cursor-pointer transition-colors">
+                                <input type="checkbox" name="notes" value="channeling" class="accent-amber-700 w-4 h-4">
+                                <span class="text-stone-700">チャネリング疑い</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Custom Comment -->
+                    <div>
+                        <label for="comment" class="block text-xs font-bold text-stone-600 uppercase tracking-wider mb-1.5">メモ・感想</label>
+                        <textarea id="comment" rows="2" 
+                            class="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-amber-700/20 focus:border-amber-700 transition-all text-sm font-medium"
+                            placeholder="香りや、味の詳細などを書き残せます。"></textarea>
+                    </div>
+
+                    <!-- Form Action Buttons (Separated into Log-Only and AI-Analysis) -->
+                    <div class="space-y-3 pt-3">
+                        <div class="flex gap-3">
+                            <!-- Reset -->
+                            <button type="button" id="reset-btn" class="w-1/4 py-2.5 bg-stone-100 hover:bg-stone-200 text-stone-600 font-bold rounded-xl transition-all text-xs shadow-sm">
+                                リセット
+                            </button>
+                            <!-- Log Only -->
+                            <button type="button" id="log-only-btn" class="w-3/4 py-2.5 bg-amber-100 hover:bg-amber-200/80 text-amber-950 font-bold rounded-xl transition-all text-xs border border-amber-900/10 shadow-sm flex items-center justify-center gap-1.5">
+                                <svg class="w-4 h-4 text-amber-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+                                </svg>
+                                抽出ログを記録する
+                            </button>
+                        </div>
+
+                        <!-- Premium AI Analysis (Main Submit) -->
+                        <button type="submit" class="w-full py-3.5 bg-amber-950 hover:bg-amber-900 text-amber-50 font-black rounded-xl transition-all text-xs shadow-md border border-amber-800 flex items-center justify-center gap-2">
+                            <svg class="w-5 h-5 text-amber-300 animate-pulse" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"></path>
+                            </svg>
+                            世界一のバリスタAIに解析を依頼
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <!-- Right Side: AI Analytics + Recommendations & History (7 Cols) -->
+        <section class="lg:col-span-7 space-y-6">
+
+            <!-- Dynamic AI Analysis Results Section (Appears after submission / preloaded view) -->
+            <div id="analysis-result-section" class="bg-gradient-to-br from-amber-900/10 via-amber-900/[0.02] to-transparent rounded-2xl shadow-lg border border-amber-900/15 p-6 sm:p-8 space-y-6 hidden">
+                <div class="flex flex-col sm:flex-row justify-between items-start gap-4">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-2 h-2 bg-amber-600 rounded-full animate-ping"></span>
+                            <span class="text-xs font-black text-amber-800 uppercase tracking-widest">AI Analysis Report</span>
+                        </div>
+                        <h2 id="res-title" class="text-xl sm:text-2xl font-black text-stone-900 mt-1">分析中...</h2>
+                    </div>
+                    <!-- Quick stats like brew ratio and speed -->
+                    <div class="flex gap-2 text-xs font-medium">
+                        <span id="res-ratio" class="px-3 py-1.5 bg-white/80 rounded-lg border border-stone-100 shadow-sm text-stone-700">比率: -</span>
+                        <span id="res-flow" class="px-3 py-1.5 bg-white/80 rounded-lg border border-stone-100 shadow-sm text-stone-700">流速: -</span>
+                    </div>
+                </div>
+
+                <!-- Technical Extraction Refractometer & Channeling Indicators -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-white/60 p-4 rounded-xl border border-stone-200/40 shadow-inner text-xs">
+                    <div>
+                        <div class="text-[10px] font-black text-stone-400 uppercase tracking-wider mb-1">推定 TDS (可溶性固形分濃度)</div>
+                        <div class="flex items-baseline gap-1.5">
+                            <span id="tds-val-display" class="text-lg font-black text-amber-950">--%</span>
+                            <span id="tds-status" class="text-[10px] font-bold text-amber-800 bg-amber-100/50 px-1.5 py-0.5 rounded">--</span>
+                        </div>
+                        <div class="w-full bg-stone-200 h-1.5 rounded-full mt-2 overflow-hidden">
+                            <div id="tds-bar" class="bg-amber-700 h-full rounded-full transition-all" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="text-[10px] font-black text-stone-400 uppercase tracking-wider mb-1">推定 EY (抽出収率)</div>
+                        <div class="flex items-baseline gap-1.5">
+                            <span id="ey-val-display" class="text-lg font-black text-amber-950">--%</span>
+                            <span id="ey-status" class="text-[10px] font-bold text-emerald-800 bg-emerald-100/50 px-1.5 py-0.5 rounded">--</span>
+                        </div>
+                        <div class="w-full bg-stone-200 h-1.5 rounded-full mt-2 overflow-hidden">
+                            <div id="ey-bar" class="bg-emerald-600 h-full rounded-full transition-all" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="text-[10px] font-black text-stone-400 uppercase tracking-wider mb-1">チャネリングリスク度</div>
+                        <div class="flex items-baseline gap-1.5">
+                            <span id="risk-val-display" class="text-lg font-black text-amber-950">--%</span>
+                            <span id="risk-status" class="text-[10px] font-bold px-1.5 py-0.5 rounded">--</span>
+                        </div>
+                        <div class="w-full bg-stone-200 h-1.5 rounded-full mt-2 overflow-hidden">
+                            <div id="risk-bar" class="bg-stone-500 h-full rounded-full transition-all" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Status Tags -->
+                <div id="res-tags" class="flex flex-wrap gap-2">
+                    <!-- Dynamic Badges -->
+                </div>
+
+                <!-- Descriptive AI breakdown -->
+                <div class="bg-white/80 p-5 rounded-2xl border border-stone-200/50 shadow-sm">
+                    <h3 class="text-xs font-bold text-stone-400 uppercase tracking-wider mb-2">AIの分析解説</h3>
+                    <p id="res-description" class="text-sm text-stone-600 leading-relaxed font-medium">
+                        抽出データに問題は見つかりませんでした。
+                    </p>
+                </div>
+
+                <!-- Action Suggestions -->
+                <div class="space-y-3">
+                    <h3 class="text-xs font-bold text-stone-400 uppercase tracking-wider">具体的な改善アクション</h3>
+                    <ul id="res-actions" class="space-y-2">
+                        <!-- Dynamic Lists -->
+                    </ul>
+                </div>
+
+                <!-- Recommended Recipe Suggestion Card -->
+                <div class="bg-amber-900 text-amber-50 rounded-2xl p-6 shadow-inner relative overflow-hidden border border-amber-800">
+                    <!-- Background aesthetic watermarked cup icon -->
+                    <div class="absolute -right-10 -bottom-10 opacity-5 pointer-events-none transform rotate-12">
+                        <svg class="w-48 h-48" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M4 8V6a6 6 0 1112 0v2h1a2 2 0 012 2v5a2 2 0 01-2 2H3a2 2 0 01-2-2v-5a2 2 0 012-2h1zm3 0h6V6a3 3 0 10-6 0v2z"></path>
+                        </svg>
+                    </div>
+
+                    <div class="relative flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                        <div class="space-y-4 flex-1">
+                            <div>
+                                <span class="bg-amber-700/60 text-amber-200 text-2xs px-2.5 py-1 rounded-full font-black uppercase tracking-widest border border-amber-600/30">Next Brew Suggested</span>
+                                <h4 class="text-lg font-black text-white mt-1">次回のおすすめ抽出条件</h4>
+                            </div>
+
+                            <!-- Next Settings Parameters Grid -->
+                            <div class="grid grid-cols-5 gap-2 text-center">
+                                <div class="bg-white/10 rounded-xl p-2 border border-white/5">
+                                    <div class="text-[10px] text-amber-200/70">粉の量</div>
+                                    <div id="next-dose" class="font-bold text-sm sm:text-base text-white">18.0g</div>
+                                </div>
+                                <div class="bg-white/10 rounded-xl p-2 border border-white/5">
+                                    <div class="text-[10px] text-amber-200/70">挽き目</div>
+                                    <div id="next-grind" class="font-bold text-sm sm:text-base text-white">4.1</div>
+                                </div>
+                                <div class="bg-white/10 rounded-xl p-2 border border-white/5">
+                                    <div class="text-[10px] text-amber-200/70">抽出量</div>
+                                    <div id="next-yield" class="font-bold text-sm sm:text-base text-white">36.0g</div>
+                                </div>
+                                <div class="bg-white/10 rounded-xl p-2 border border-white/5">
+                                    <div class="text-[10px] text-amber-200/70">抽出時間</div>
+                                    <div id="next-time" class="font-bold text-sm sm:text-base text-white">26-29秒</div>
+                                </div>
+                                <div class="bg-white/10 rounded-xl p-2 border border-white/5">
+                                    <div class="text-[10px] text-amber-200/70">湯温</div>
+                                    <div id="next-temp" class="font-bold text-sm sm:text-base text-white">93°C</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Apply Button -->
+                        <div class="shrink-0 w-full md:w-auto">
+                            <button id="apply-suggest-btn" class="w-full md:w-auto px-5 py-3.5 bg-amber-500 hover:bg-amber-400 text-amber-950 font-extrabold text-sm rounded-xl transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2">
+                                <svg class="w-5 h-5 text-amber-950" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
+                                </svg>
+                                提案をフォームに適用
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dashboard Trends Visualization Chart -->
+            <div class="bg-white rounded-2xl shadow-md border border-stone-100 p-6 space-y-4">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 class="text-base font-bold text-stone-900 flex items-center gap-2">
+                            <span class="w-2.5 h-4 bg-emerald-600 rounded-full"></span>
+                            抽出スコアの推移（直近10件）
+                        </h2>
+                        <p class="text-[11px] text-stone-400 mt-0.5">改善活動の効果をビジュアルで確認できます。</p>
+                    </div>
+                </div>
+                <!-- Line Chart Container -->
+                <div class="h-64 relative">
+                    <canvas id="trend-chart"></canvas>
+                </div>
+            </div>
+
+            <!-- Historical Recipes Log Timeline -->
+            <div class="bg-white rounded-2xl shadow-md border border-stone-100 p-6 space-y-4">
+                <h2 class="text-base font-bold text-stone-900 flex items-center gap-2">
+                    <span class="w-2.5 h-4 bg-stone-500 rounded-full"></span>
+                    抽出ログ・履歴
+                </h2>
+                <!-- List -->
+                <div id="history-list" class="space-y-4 max-h-[500px] overflow-y-auto pr-1">
+                    <!-- Dynamically populated rows -->
+                </div>
+            </div>
+
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-stone-900 text-stone-400 border-t border-stone-800 mt-12 py-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-3">
+            <p class="text-xs">&copy; 2026 Barista AI Companion. Designed with ❤️ for Espresso Lovers.</p>
+            <p class="text-[10px] text-stone-600">お使いのブラウザ（LocalStorage）に抽出結果が安全に保存されます。サーバーへは送信されません。</p>
+        </div>
+    </footer>
+
+    <!-- App JS -->
+    <script src="barista-ai.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
