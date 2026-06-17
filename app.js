@@ -149,14 +149,86 @@ class BaristaApp {
         this.renderHistory();
         this.renderCharts();
         
-        // フォームに初期の標準的な値をセット
-        this.resetForm();
+        // フォームに前回の入力値または標準的な値をセット（アプリを閉じても消えないようにする）
+        this.loadFormState();
 
-        // 最新のレコードの分析結果を初期表示
+        // 最新のレコードの分析結果を初期表示（前回のアドバイスコメントを残す）
         if (this.records.length > 0) {
-            this.currentAnalysis = this.records[0].analysis;
-            this.showAnalysisResult(this.records[0]);
+            const savedLastId = localStorage.getItem("barista_last_shown_id");
+            let recordToShow = this.records[0];
+            if (savedLastId) {
+                const found = this.records.find(r => r.id === savedLastId);
+                if (found) recordToShow = found;
+            }
+            this.currentAnalysis = recordToShow.analysis;
+            this.showAnalysisResult(recordToShow);
         }
+    }
+
+    saveFormState() {
+        const state = {
+            beanName: document.getElementById("bean-name").value,
+            beanSelect: document.getElementById("bean-select").value,
+            dose: document.getElementById("dose").value,
+            grindSize: document.getElementById("grind-size").value,
+            grinderSpeed: document.getElementById("grinder-speed").value,
+            yield: document.getElementById("yield").value,
+            time: document.getElementById("time").value,
+            temp: document.getElementById("temp").value,
+            preinfusionOn: document.getElementById("preinfusion-on").value,
+            preinfusionWait: document.getElementById("preinfusion-wait").value,
+            acidity: document.getElementById("acidity").value,
+            bitterness: document.getElementById("bitterness").value,
+            body: document.getElementById("body").value,
+            sweetness: document.getElementById("sweetness").value,
+            crema: document.getElementById("crema").value,
+            balance: document.getElementById("balance").value,
+            comment: document.getElementById("comment").value,
+            notes: Array.from(document.querySelectorAll("input[name='notes']:checked")).map(cb => cb.value)
+        };
+        localStorage.setItem("barista_form_state", JSON.stringify(state));
+    }
+
+    loadFormState() {
+        const savedState = localStorage.getItem("barista_form_state");
+        if (savedState) {
+            try {
+                const state = JSON.parse(savedState);
+                document.getElementById("bean-name").value = state.beanName || "";
+                document.getElementById("bean-select").value = state.beanSelect || "";
+                document.getElementById("dose").value = state.dose || "18.0";
+                document.getElementById("grind-size").value = state.grindSize || "2.1";
+                document.getElementById("grinder-speed").value = state.grinderSpeed || "5";
+                document.getElementById("yield").value = state.yield || "36.0";
+                document.getElementById("time").value = state.time || "26";
+                document.getElementById("temp").value = state.temp || "93";
+                document.getElementById("preinfusion-on").value = state.preinfusionOn || "2.0";
+                document.getElementById("preinfusion-wait").value = state.preinfusionWait || "3.0";
+                
+                document.getElementById("acidity").value = state.acidity || "3";
+                document.getElementById("bitterness").value = state.bitterness || "3";
+                document.getElementById("body").value = state.body || "3";
+                document.getElementById("sweetness").value = state.sweetness || "3";
+                document.getElementById("crema").value = state.crema || "3";
+                document.getElementById("balance").value = state.balance || "3";
+                
+                this.updateSliderLabels();
+
+                // チェックボックス復元
+                const checkboxes = document.querySelectorAll("input[name='notes']");
+                checkboxes.forEach(cb => {
+                    cb.checked = (state.notes || []).includes(cb.value);
+                });
+
+                document.getElementById("comment").value = state.comment || "";
+                return;
+            } catch (e) {
+                console.error("フォーム状態の読み込みに失敗しました。デフォルト値を使用します。", e);
+            }
+        }
+        
+        // 状態が無い場合はデフォルト
+        this.resetForm();
     }
 
     loadBeans() {
@@ -346,6 +418,7 @@ class BaristaApp {
                 if (e.target.value) {
                     document.getElementById("bean-name").value = e.target.value;
                 }
+                this.saveFormState();
             });
         }
 
@@ -364,18 +437,31 @@ class BaristaApp {
                     this.saveBeans();
                     this.renderBeansDropdown();
                     document.getElementById("bean-name").value = "";
+                    this.saveFormState();
                     this.showToast("コーヒー豆をリストから削除しました");
                 }
             });
         }
 
-        // イベント委譲で削除ボタンを監視
+        // フォーム内のすべての入力変更を監視して永続化する
+        const form = document.getElementById("brew-form");
+        if (form) {
+            form.addEventListener("input", () => {
+                this.saveFormState();
+            });
+            form.addEventListener("change", () => {
+                this.saveFormState();
+            });
+        }
+
+        // イベント委譲で削除・編集ボタンを監視（直付イベントは二重動作の原因になるため、こちらのみに統一）
         document.getElementById("history-list").addEventListener("click", (e) => {
             if (e.target.closest(".delete-record-btn")) {
+                e.stopPropagation();
                 const id = e.target.closest(".delete-record-btn").dataset.id;
                 this.deleteRecord(id);
-            }
-            if (e.target.closest(".edit-record-btn")) {
+            } else if (e.target.closest(".edit-record-btn")) {
+                e.stopPropagation();
                 const id = e.target.closest(".edit-record-btn").dataset.id;
                 this.editRecord(id);
             }
@@ -833,6 +919,9 @@ class BaristaApp {
         const section = document.getElementById("analysis-result-section");
         section.classList.remove("hidden");
 
+        // 前回表示していたアドバイスのIDを永続化（リロードしても維持する）
+        localStorage.setItem("barista_last_shown_id", record.id);
+
         const ana = record.analysis;
 
         // 見出し・ステータス
@@ -1094,24 +1183,6 @@ class BaristaApp {
             container.appendChild(item);
         });
 
-        // Append event listeners for edit/delete buttons after rendering history
-        this.addHistoryButtonListeners();
-    }
-
-    addHistoryButtonListeners() {
-        document.querySelectorAll(".edit-record-btn").forEach(button => {
-            button.addEventListener("click", (e) => {
-                const id = e.currentTarget.dataset.id;
-                this.editRecord(id);
-            });
-        });
-
-        document.querySelectorAll(".delete-record-btn").forEach(button => {
-            button.addEventListener("click", (e) => {
-                const id = e.currentTarget.dataset.id;
-                this.deleteRecord(id);
-            });
-        });
     }
 
     renderCharts() {
